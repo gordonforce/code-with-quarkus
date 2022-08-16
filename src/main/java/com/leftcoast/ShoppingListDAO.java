@@ -1,15 +1,23 @@
 package com.leftcoast;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.persistence.EntityManager;
-import java.util.Objects;
+import javax.transaction.Transactional;
+import javax.validation.constraints.NotNull;
+import java.util.Collection;
 
 @ApplicationScoped
+@Transactional
 public class ShoppingListDAO {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShoppingListDAO.class);
 
     private final EntityManager entityManager;
 
-    public ShoppingListDAO(EntityManager entityManager) {
+    public ShoppingListDAO(final EntityManager entityManager) {
 
         this.entityManager = entityManager;
 
@@ -21,9 +29,25 @@ public class ShoppingListDAO {
 
     }
 
-    public void storeShoppingListItem(final String itemName, final int amount) {
+    public Collection<ShoppingListItem> getAllShoppingListItems() {
 
-        entityManager.persist((new ShoppingListItem(itemName, amount)));
+        return entityManager
+                .createQuery(
+                        "select sli from ShoppingListItem sli ORDER BY sli.id asc",
+                        ShoppingListItem.class)
+                .getResultList();
+
+    }
+
+    public ShoppingListItem storeShoppingListItem(final String itemName, final int amount) {
+
+        final ShoppingListItem newItem = new ShoppingListItem(itemName, amount);
+
+        entityManager.persist(newItem);
+
+        LOGGER.debug("New item after persist and before read is {}", newItem);
+
+        return newItem;
 
     }
 
@@ -37,13 +61,17 @@ public class ShoppingListDAO {
 
     }
 
+    private <T> T returnNonNull(@NotNull final T source, final T candidate) {
+
+        return (source.equals(candidate)) ? source : candidate;
+
+    }
+
     public void updateShoppingListItem(final Integer id, final String itemName, final Integer amount) {
 
         final ShoppingListItem item = getShoppingListItem(id);
-
-        if (Objects.nonNull(amount) && amount != item.getAmount()) item.setAmount(amount);
-
-        if (Objects.nonNull(itemName) && !itemName.equals(item.getItemName())) item.setItemName(itemName);
+        item.setItemName(returnNonNull(item.getItemName(), itemName));
+        item.setAmount(returnNonNull(item.getAmount(), amount));
 
         entityManager.persist(item);
 
@@ -55,7 +83,7 @@ public class ShoppingListDAO {
 
         final boolean deleted = item != null;
 
-        if (deleted) entityManager.detach(item);
+        if (deleted) entityManager.remove(item);
 
         return deleted;
 

@@ -1,6 +1,7 @@
 package com.leftcoast;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 @Table(name="SHOPPING_LIST_ITEMS")
@@ -42,6 +43,28 @@ public class ShoppingListItem {
 
     public void setAmount(int amount) {
         this.amount = amount;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShoppingListItem item = (ShoppingListItem) o;
+        return amount == item.amount && Objects.equals(id, item.id) && Objects.equals(itemName, item.itemName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, itemName, amount);
+    }
+
+    @Override
+    public String toString() {
+        return "ShoppingListItem{" +
+                "id=" + id +
+                ", itemName='" + itemName + '\'' +
+                ", amount=" + amount +
+                '}';
     }
 
 }
